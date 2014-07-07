@@ -780,7 +780,7 @@
       (min max-parallelism num-tasks)
       num-tasks)))
 
-(defn normalize-topology [storm-conf ^StormTopology topology]
+(defn normalize-topologynormalize-topology [storm-conf ^StormTopology topology]
   (let [ret (.deepCopy topology)]
     (doseq [[_ component] (all-components ret)]
       (.set_json_conf
@@ -954,6 +954,10 @@
                                               TopologyInitialStatus/ACTIVE :active}]
                 (start-storm nimbus storm-name storm-id (thrift-status->kw-status (.get_initial_status submitOptions))))
               (mk-assignments nimbus)))
+              ;;;mk-assignment有两个
+              ;;;主要任务，第一是计算出有多少task,即有多少个spout,多少个bolt，第二就
+              ;;;是在刚才的计算基础上通过调用zookeeper应用接口，写入assignment，以便
+              ;;;supervisor感知到有新的任务需要认领。
           (catch Throwable e
             (log-warn-error e "Topology submission exception. (topology name='" storm-name "')")
             (throw e))))

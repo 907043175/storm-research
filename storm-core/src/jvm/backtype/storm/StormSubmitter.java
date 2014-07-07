@@ -17,27 +17,20 @@
  */
 package backtype.storm;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-
+import backtype.storm.generated.*;
+import backtype.storm.utils.BufferFileInputStream;
+import backtype.storm.utils.NimbusClient;
+import backtype.storm.utils.Utils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.thrift.TException;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.generated.AlreadyAliveException;
-import backtype.storm.generated.ClusterSummary;
-import backtype.storm.generated.InvalidTopologyException;
-import backtype.storm.generated.Nimbus;
-import backtype.storm.generated.StormTopology;
-import backtype.storm.generated.SubmitOptions;
-import backtype.storm.generated.TopologySummary;
-import backtype.storm.utils.BufferFileInputStream;
-import backtype.storm.utils.NimbusClient;
-import backtype.storm.utils.Utils;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Use this class to submit topologies to run on the Storm cluster. You should run your program
@@ -73,6 +66,10 @@ public class StormSubmitter {
     /**
      * Submits a topology to run on the cluster. A topology runs forever or until
      * explicitly killed.
+     *
+     * submitTopology函数其实主要就干两件事，一上传jar文件到storm cluster，
+     另一件事通知storm cluster文件已经上传完毕，你可以执行某某某topology
+     了。
      *
      *
      * @param name the name of the storm.
@@ -234,7 +231,7 @@ public class StormSubmitter {
 
         NimbusClient client = NimbusClient.getConfiguredClient(conf);
         try {
-            String uploadLocation = client.getClient().beginFileUpload();
+            String uploadLocation = client.getClient().beginFileUpload();     //#1开始文件上传
             LOG.info("Uploading topology jar " + localJar + " to assigned location: " + uploadLocation);
             BufferFileInputStream is = new BufferFileInputStream(localJar, THRIFT_CHUNK_SIZE_BYTES);
 
@@ -252,9 +249,9 @@ public class StormSubmitter {
                 }
 
                 if(toSubmit.length==0) break;
-                client.getClient().uploadChunk(uploadLocation, ByteBuffer.wrap(toSubmit));
+                client.getClient().uploadChunk(uploadLocation, ByteBuffer.wrap(toSubmit));   //#2真正文件上传
             }
-            client.getClient().finishFileUpload(uploadLocation);
+            client.getClient().finishFileUpload(uploadLocation);          //#3上传文件完成
 
             if (listener != null) {
                 listener.onCompleted(localJar, uploadLocation, totalSize);
