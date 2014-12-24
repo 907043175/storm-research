@@ -780,7 +780,7 @@
       (min max-parallelism num-tasks)
       num-tasks)))
 
-(defn normalize-topologynormalize-topology [storm-conf ^StormTopology topology]
+(defn normalize-topology [storm-conf ^StormTopology topology]
   (let [ret (.deepCopy topology)]
     (doseq [[_ component] (all-components ret)]
       (.set_json_conf
@@ -1150,9 +1150,9 @@
         (timer-waiting? (:timer nimbus))))))
 
 (defn launch-server! [conf nimbus]
-  (validate-distributed-mode! conf)
-  (let [service-handler (service-handler conf nimbus)
-        options (-> (TNonblockingServerSocket. (int (conf NIMBUS-THRIFT-PORT)))
+  (validate-distributed-mode! conf) ;验证是否是分布式模式
+  (let [service-handler (service-handler conf nimbus) ;定义server-handler方法
+        options (-> (TNonblockingServerSocket. (int (conf NIMBUS-THRIFT-PORT))) ;配置thrift sever相关参数
                     (THsHaServer$Args.)
                     (.workerThreads 64)
                     (.protocolFactory (TBinaryProtocol$Factory. false true (conf NIMBUS-THRIFT-MAX-BUFFER-SIZE)))
@@ -1163,7 +1163,7 @@
                                                   (.shutdown service-handler)
                                                   (.stop server)))
     (log-message "Starting Nimbus server...")
-    (.serve server)))
+    (.serve server))) ; 启动thrift server
 
 ;; distributed implementation
 
